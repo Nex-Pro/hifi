@@ -77,6 +77,12 @@ public:
     */
     Q_INVOKABLE bool exportEntities(const QString& filename, float x, float y, float z, float scale);
 
+    /**jsdoc
+    * Export the entities from a js JSON object to a JSON file.
+    * @function Clipboard.exportEntitiesFromJSON
+    * @param {QJsonValue} the JSON object to export.
+    * @returns {boolean} <code>true</code> if the export was successful, otherwise <code>false</code>.
+    */
     Q_INVOKABLE bool exportEntitiesFromJSON(const QString& filename, const QJsonValue& entitiesJSON);
 
     /**jsdoc
