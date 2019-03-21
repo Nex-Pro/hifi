@@ -46,6 +46,15 @@ bool ClipboardScriptingInterface::exportEntities(const QString& filename, float 
     return retVal;
 }
 
+bool ClipboardScriptingInterface::exportEntitiesFromJSON(const QString& filename, const QJsonValue& entitiesJSON) {
+    bool retVal;
+    BLOCKING_INVOKE_METHOD(qApp, "exportEntities",
+                              Q_RETURN_ARG(bool, retVal),
+                              Q_ARG(const QString&, filename),
+                              Q_ARG(const QJsonValue&, entitiesJSON));
+    return retVal;
+}
+
 bool ClipboardScriptingInterface::importEntities(
     const QString& filename,
     const bool isObservable,

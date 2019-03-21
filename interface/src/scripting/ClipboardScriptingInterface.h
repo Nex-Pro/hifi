@@ -77,6 +77,8 @@ public:
     */
     Q_INVOKABLE bool exportEntities(const QString& filename, float x, float y, float z, float scale);
 
+    Q_INVOKABLE bool exportEntitiesFromJSON(const QString& filename, const QJsonValue& entitiesJSON);
+
     /**jsdoc
      * Paste the contents of the clipboard into the world.
      * @function Clipboard.pasteEntities
