@@ -79,6 +79,15 @@ public:
     Q_INVOKABLE bool exportEntities(const QString& filename, float x, float y, float z, float scale);
 
     /**jsdoc
+    * Export the entities whose properties are contained in an array to a JSON file.
+    * @function Clipboard.exportEntitiesFromArrayOfProperites
+    * @param {string} filename Path and name of the file to export the entities to. Should have the extension ".json".
+    * @param {entitiesProperties} Array containing properties of chosen entities.
+    * @returns {boolean} <code>true</code> if the export was successful, otherwise <code>false</code>.
+    */
+    Q_INVOKABLE bool exportEntitiesFromArrayOfProperties(const QString& filename, const QObject& entitiesProperties);
+
+    /**jsdoc
      * Paste the contents of the clipboard into the world.
      * @function Clipboard.pasteEntities
      * @param {Vec3} position Position to paste the clipboard contents at.

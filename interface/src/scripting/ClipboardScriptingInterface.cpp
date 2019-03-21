@@ -60,6 +60,15 @@ bool ClipboardScriptingInterface::importEntities(
     return retVal;
 }
 
+bool ClipboardScriptingInterface::exportEntitiesFromArrayOfProperties(const QString& filename, const QObject& entitiesProperties) {
+    bool retVal;
+    BLOCKING_INVOKE_METHOD(qApp, "exportEntitiesFromArrayOfProperties",
+        Q_RETURN_ARG(bool, retVal),
+        Q_ARG(const QString&, filename),
+        Q_ARG(const QObject&, entitiesProperties));
+    return Q_INVOKABLE bool();
+}
+
 QVector<EntityItemID> ClipboardScriptingInterface::pasteEntities(glm::vec3 position) {
     QVector<EntityItemID> retVal;
     BLOCKING_INVOKE_METHOD(qApp, "pasteEntities",
