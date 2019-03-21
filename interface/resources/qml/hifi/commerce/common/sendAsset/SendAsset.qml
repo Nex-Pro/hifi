@@ -25,7 +25,6 @@ Item {
     HifiConstants { id: hifi; }
 
     id: root;
-
     property int parentAppTitleBarHeight;
     property int parentAppNavBarHeight;
     property string currentActiveView: "sendAssetHome";
@@ -72,6 +71,7 @@ Item {
 
         onBalanceResult : {
             balanceText.text = result.data.balance;
+            sendButton.enabled = true;
         }
 
         onTransferAssetToNodeResult: {
@@ -1372,6 +1372,7 @@ Item {
                 height: 40;
                 width: 100;
                 text: "SUBMIT";
+                enabled: false;
                 onClicked: {
                     if (root.assetCertID === "" && parseInt(amountTextField.text) > parseInt(balanceText.text)) {
                         amountTextField.focus = true;

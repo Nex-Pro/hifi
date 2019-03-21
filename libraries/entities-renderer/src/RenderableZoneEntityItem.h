@@ -99,7 +99,6 @@ private:
     ComponentMode _bloomMode { COMPONENT_MODE_INHERIT };
 
     indexed_container::Index _sunIndex { LightStage::INVALID_INDEX };
-    indexed_container::Index _shadowIndex { LightStage::INVALID_INDEX };
     indexed_container::Index _ambientIndex { LightStage::INVALID_INDEX };
 
     BackgroundStagePointer _backgroundStage;
@@ -151,7 +150,7 @@ public:
     virtual bool addToScene(const EntityItemPointer& self, const render::ScenePointer& scene, render::Transaction& transaction) override;
     virtual void removeFromScene(const EntityItemPointer& self, const render::ScenePointer& scene, render::Transaction& transaction) override;
 private:
-    virtual void locationChanged(bool tellPhysics = true) override { EntityItem::locationChanged(tellPhysics); notifyBoundChanged(); }
+    virtual void locationChanged(bool tellPhysics = true, bool tellChildren = true) override { EntityItem::locationChanged(tellPhysics, tellChildren); notifyBoundChanged(); }
     virtual void dimensionsChanged() override { EntityItem::dimensionsChanged(); notifyBoundChanged(); }
     void notifyBoundChanged();
     void notifyChangedRenderItem();

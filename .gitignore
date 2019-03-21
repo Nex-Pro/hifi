@@ -14,14 +14,20 @@ Makefile
 
 # Android Studio
 *.iml
+*.class
 local.properties
 android/gradle*
 android/.gradle
 android/**/src/main/jniLibs
 android/**/libs
+android/**/bin
 android/**/src/main/res/values/libs.xml
 android/**/src/main/assets
 android/**/gradle*
+*.class
+
+# Visual Studio
+/.vs
 
 # VSCode
 # List taken from Github Global Ignores master@435c4d92
@@ -96,7 +102,9 @@ tools/jsdoc/package-lock.json
 # Python compile artifacts
 **/__pycache__
 
-# ignore unneeded unity project files for avatar exporter
-tools/unity-avatar-exporter/Library
-tools/unity-avatar-exporter/Packages
-tools/unity-avatar-exporter/ProjectSettings
+# ignore local unity project files for avatar exporter
+tools/unity-avatar-exporter
+
+server-console/package-lock.json
+vcpkg/
+/tools/nitpick/compiledResources

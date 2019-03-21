@@ -62,16 +62,18 @@ function getMyAvatar() {
 function getMyAvatarSettings() {
     return {
         dominantHand: MyAvatar.getDominantHand(),
-        collisionsEnabled : MyAvatar.getCollisionsEnabled(),
+        hmdAvatarAlignmentType: MyAvatar.getHmdAvatarAlignmentType(),
+        collisionsEnabled: MyAvatar.getCollisionsEnabled(),
+        otherAvatarsCollisionsEnabled: MyAvatar.getOtherAvatarsCollisionsEnabled(),
         collisionSoundUrl : MyAvatar.collisionSoundURL,
         animGraphUrl: MyAvatar.getAnimGraphUrl(),
         animGraphOverrideUrl : MyAvatar.getAnimGraphOverrideUrl(),
     }
 }
 
-function updateAvatarWearables(avatar, callback) {
+function updateAvatarWearables(avatar, callback, wearablesOverride) {
     executeLater(function() {
-        var wearables = getMyAvatarWearables();
+        var wearables = wearablesOverride ? wearablesOverride : getMyAvatarWearables();
         avatar[ENTRY_AVATAR_ENTITIES] = wearables;
 
         sendToQml({'method' : 'wearablesUpdated', 'wearables' : wearables})
@@ -128,10 +130,24 @@ function onDominantHandChanged(dominantHand) {
     }
 }
 
+function onHmdAvatarAlignmentTypeChanged(type) {
+    if (currentAvatarSettings.hmdAvatarAlignmentType !== type) {
+        currentAvatarSettings.hmdAvatarAlignmentType = type;
+        sendToQml({'method' : 'settingChanged', 'name' : 'hmdAvatarAlignmentType', 'value' : type});
+    }
+}
+
 function onCollisionsEnabledChanged(enabled) {
     if(currentAvatarSettings.collisionsEnabled !== enabled) {
         currentAvatarSettings.collisionsEnabled = enabled;
         sendToQml({'method' : 'settingChanged', 'name' : 'collisionsEnabled', 'value' : enabled})
+    }
+}
+
+function onOtherAvatarsCollisionsEnabledChanged(enabled) {
+    if (currentAvatarSettings.otherAvatarsCollisionsEnabled !== enabled) {
+        currentAvatarSettings.otherAvatarsCollisionsEnabled = enabled;
+        sendToQml({ 'method': 'settingChanged', 'name': 'otherAvatarsCollisionsEnabled', 'value': enabled })
     }
 }
 
@@ -202,7 +218,7 @@ function fromQml(message) { // messages are {method, params}, like json-rpc. See
         break;
     case 'adjustWearable':
         if(message.properties.localRotationAngles) {
-            message.properties.localRotation = Quat.fromVec3Degrees(message.properties.localRotationAngles)
+            message.properties.localRotation = Quat.fromVec3Degrees(message.properties.localRotationAngles);
         }
 
         Entities.editEntity(message.entityID, message.properties);
@@ -227,7 +243,7 @@ function fromQml(message) { // messages are {method, params}, like json-rpc. See
             // revert changes using snapshot of wearables
             if(currentAvatarWearablesBackup !== null) {
                 AvatarBookmarks.updateAvatarEntities(currentAvatarWearablesBackup);
-                updateAvatarWearables(currentAvatar);
+                updateAvatarWearables(currentAvatar, null, currentAvatarWearablesBackup);
             }
         } else {
             sendToQml({'method' : 'updateAvatarInBookmarks'});
@@ -323,6 +339,8 @@ function fromQml(message) { // messages are {method, params}, like json-rpc. See
         currentAvatar.avatarScale = message.avatarScale;
 
         MyAvatar.setDominantHand(message.settings.dominantHand);
+        MyAvatar.setHmdAvatarAlignmentType(message.settings.hmdAvatarAlignmentType);
+        MyAvatar.setOtherAvatarsCollisionsEnabled(message.settings.otherAvatarsCollisionsEnabled);
         MyAvatar.setCollisionsEnabled(message.settings.collisionsEnabled);
         MyAvatar.collisionSoundURL = message.settings.collisionSoundUrl;
         MyAvatar.setAnimGraphOverrideUrl(message.settings.animGraphOverrideUrl);
@@ -512,7 +530,9 @@ function off() {
         Entities.deletingWearable.disconnect(onDeletingWearable);
         MyAvatar.skeletonModelURLChanged.disconnect(onSkeletonModelURLChanged);
         MyAvatar.dominantHandChanged.disconnect(onDominantHandChanged);
+        MyAvatar.hmdAvatarAlignmentTypeChanged.disconnect(onHmdAvatarAlignmentTypeChanged);
         MyAvatar.collisionsEnabledChanged.disconnect(onCollisionsEnabledChanged);
+        MyAvatar.otherAvatarsCollisionsEnabledChanged.disconnect(onOtherAvatarsCollisionsEnabledChanged);
         MyAvatar.newCollisionSoundURL.disconnect(onNewCollisionSoundUrl);
         MyAvatar.animGraphUrlChanged.disconnect(onAnimGraphUrlChanged);
         MyAvatar.targetScaleChanged.disconnect(onTargetScaleChanged);
@@ -532,7 +552,9 @@ function on() {
         Entities.deletingWearable.connect(onDeletingWearable);
         MyAvatar.skeletonModelURLChanged.connect(onSkeletonModelURLChanged);
         MyAvatar.dominantHandChanged.connect(onDominantHandChanged);
+        MyAvatar.hmdAvatarAlignmentTypeChanged.connect(onHmdAvatarAlignmentTypeChanged);
         MyAvatar.collisionsEnabledChanged.connect(onCollisionsEnabledChanged);
+        MyAvatar.otherAvatarsCollisionsEnabledChanged.connect(onOtherAvatarsCollisionsEnabledChanged);
         MyAvatar.newCollisionSoundURL.connect(onNewCollisionSoundUrl);
         MyAvatar.animGraphUrlChanged.connect(onAnimGraphUrlChanged);
         MyAvatar.targetScaleChanged.connect(onTargetScaleChanged);

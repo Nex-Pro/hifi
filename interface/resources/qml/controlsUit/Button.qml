@@ -32,6 +32,10 @@ Original.Button {
     width: hifi.dimensions.buttonWidth
     height: hifi.dimensions.controlLineHeight
 
+    property size implicitPadding: Qt.size(20, 16)
+    property int implicitWidth: buttonContentItem.implicitWidth + implicitPadding.width
+    property int implicitHeight: buttonContentItem.implicitHeight + implicitPadding.height
+
     HifiConstants { id: hifi }
 
     onHoveredChanged: {
@@ -94,6 +98,8 @@ Original.Button {
 
     contentItem: Item {
         id: buttonContentItem
+        implicitWidth: (buttonGlyph.visible ? buttonGlyph.implicitWidth : 0) + buttonText.implicitWidth
+        implicitHeight: buttonText.implicitHeight
         TextMetrics {
             id: buttonGlyphTextMetrics;
             font: buttonGlyph.font;
@@ -137,6 +143,16 @@ Original.Button {
             horizontalAlignment: Text.AlignHCenter
             text: control.text
             Component.onCompleted: {
+                setTextPosition();
+            }
+            onTextChanged: {
+                setTextPosition();
+            }
+            function setTextPosition() {
+                // force TextMetrics to re-evaluate the text field and glyph sizes
+                // as for some reason it's not automatically being done.
+                buttonGlyphTextMetrics.text = buttonGlyph.text;
+                buttonTextMetrics.text = text;
                 if (control.buttonGlyph !== "") {
                     buttonText.x = buttonContentItem.width/2 - buttonTextMetrics.width/2 + (buttonGlyphTextMetrics.width + control.buttonGlyphRightMargin)/2;
                 } else {

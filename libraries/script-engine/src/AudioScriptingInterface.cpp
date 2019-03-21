@@ -38,10 +38,10 @@ void AudioScriptingInterface::setLocalAudioInterface(AbstractAudioInterface* aud
     }
 }
 
-ScriptAudioInjector* AudioScriptingInterface::playSystemSound(SharedSoundPointer sound, const QVector3D& position) {
+ScriptAudioInjector* AudioScriptingInterface::playSystemSound(SharedSoundPointer sound) {
     AudioInjectorOptions options;
-    options.position = glm::vec3(position.x(), position.y(), position.z());
     options.localOnly = true;
+    options.positionSet = false;    // system sound
     return playSound(sound, options);
 }
 
@@ -87,4 +87,44 @@ bool AudioScriptingInterface::isStereoInput() {
         stereoEnabled = _localAudioInterface->isStereoInput();
     }
     return stereoEnabled;
+}
+
+bool AudioScriptingInterface::getServerEcho() {
+    bool serverEchoEnabled = false;
+    if (_localAudioInterface) {
+        serverEchoEnabled = _localAudioInterface->getServerEcho();
+    }
+    return serverEchoEnabled;
+}
+
+void AudioScriptingInterface::setServerEcho(bool serverEcho) {
+    if (_localAudioInterface) {
+        QMetaObject::invokeMethod(_localAudioInterface, "setServerEcho", Q_ARG(bool, serverEcho));
+    }
+}
+
+void AudioScriptingInterface::toggleServerEcho() {
+    if (_localAudioInterface) {
+        QMetaObject::invokeMethod(_localAudioInterface, "toggleServerEcho");
+    }
+}
+
+bool AudioScriptingInterface::getLocalEcho() {
+    bool localEchoEnabled = false;
+    if (_localAudioInterface) {
+        localEchoEnabled = _localAudioInterface->getLocalEcho();
+    }
+    return localEchoEnabled;
+}
+
+void AudioScriptingInterface::setLocalEcho(bool localEcho) {
+    if (_localAudioInterface) {
+        QMetaObject::invokeMethod(_localAudioInterface, "setLocalEcho", Q_ARG(bool, localEcho));
+    }
+}
+
+void AudioScriptingInterface::toggleLocalEcho() {
+    if (_localAudioInterface) {
+        QMetaObject::invokeMethod(_localAudioInterface, "toggleLocalEcho");
+    }
 }

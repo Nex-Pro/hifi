@@ -15,9 +15,6 @@
 #include <QtGlobal>
 #include <QMetaType>
 #include <QSet>
-#include <QUrl>
-#include <QVarLengthArray>
-#include <QVariant>
 #include <QVector>
 
 #include <glm/glm.hpp>
@@ -25,6 +22,7 @@
 
 #include <Extents.h>
 #include <Transform.h>
+#include <shared/HifiTypes.h>
 
 #include "FBX.h"
 #include <hfm/HFMSerializer.h>
@@ -37,8 +35,6 @@ class FBXNode;
 
 class TextureParam {
 public:
-    glm::vec2 UVTranslation;
-    glm::vec2 UVScaling;
     glm::vec4 cropping;
     QString UVSet;
 
@@ -63,8 +59,6 @@ public:
     bool isDefault;
 
     TextureParam() :
-        UVTranslation(0.0f),
-        UVScaling(1.0f),
         cropping(0.0f),
         UVSet("map1"),
         translation(0.0f),
@@ -77,8 +71,6 @@ public:
     {}
     
     TextureParam(const TextureParam& src) :
-        UVTranslation(src.UVTranslation),
-        UVScaling(src.UVScaling),
         cropping(src.cropping),
         UVSet(src.UVSet),
         translation(src.translation),
@@ -92,38 +84,53 @@ public:
     
 };
 
+class MaterialParam {
+public:
+    glm::vec3 translation;
+    glm::vec3 scaling;
+
+    MaterialParam() :
+        translation(0.0),
+        scaling(1.0)
+    {}
+
+    MaterialParam(const MaterialParam& src) :
+        translation(src.translation),
+        scaling(src.scaling)
+    {}
+};
+
 class ExtractedMesh;
 
 class FBXSerializer : public HFMSerializer {
 public:
+    virtual ~FBXSerializer() {}
+
     MediaType getMediaType() const override;
     std::unique_ptr<hfm::Serializer::Factory> getFactory() const override;
 
     HFMModel* _hfmModel;
     /// Reads HFMModel from the supplied model and mapping data.
     /// \exception QString if an error occurs in parsing
-    HFMModel::Pointer read(const QByteArray& data, const QVariantHash& mapping, const QUrl& url = QUrl()) override;
+    HFMModel::Pointer read(const hifi::ByteArray& data, const hifi::VariantHash& mapping, const hifi::URL& url = hifi::URL()) override;
 
     FBXNode _rootNode;
     static FBXNode parseFBX(QIODevice* device);
 
-    HFMModel* extractHFMModel(const QVariantHash& mapping, const QString& url);
+    HFMModel* extractHFMModel(const hifi::VariantHash& mapping, const QString& url);
 
-    static ExtractedMesh extractMesh(const FBXNode& object, unsigned int& meshIndex, bool deduplicate = true);
+    static ExtractedMesh extractMesh(const FBXNode& object, unsigned int& meshIndex, bool deduplicate);
     QHash<QString, ExtractedMesh> meshes;
-    static void buildModelMesh(HFMMesh& extractedMesh, const QString& url);
 
-    static glm::vec3 normalizeDirForPacking(const glm::vec3& dir);
-
-    HFMTexture getTexture(const QString& textureID);
+    HFMTexture getTexture(const QString& textureID, const QString& materialID);
 
     QHash<QString, QString> _textureNames;
     // Hashes the original RelativeFilename of textures
-    QHash<QString, QByteArray> _textureFilepaths;
+    QHash<QString, hifi::ByteArray> _textureFilepaths;
     // Hashes the place to look for textures, in case they are not inlined
-    QHash<QString, QByteArray> _textureFilenames;
+    QHash<QString, hifi::ByteArray> _textureFilenames;
     // Hashes texture content by filepath, in case they are inlined
-    QHash<QByteArray, QByteArray> _textureContent;
+    QHash<hifi::ByteArray, hifi::ByteArray> _textureContent;
     QHash<QString, TextureParam> _textureParams;
 
 
@@ -142,8 +149,9 @@ public:
     QHash<QString, QString> occlusionTextures;
 
     QHash<QString, HFMMaterial> _hfmMaterials;
+    QHash<QString, MaterialParam> _materialParams;
 
-    void consolidateHFMMaterials(const QVariantHash& mapping);
+    void consolidateHFMMaterials();
 
     bool _loadLightmaps { true };
     float _lightmapOffset { 0.0f };

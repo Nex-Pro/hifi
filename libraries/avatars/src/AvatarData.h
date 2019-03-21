@@ -60,10 +60,16 @@
 using AvatarSharedPointer = std::shared_ptr<AvatarData>;
 using AvatarWeakPointer = std::weak_ptr<AvatarData>;
 using AvatarHash = QHash<QUuid, AvatarSharedPointer>;
+
 using AvatarEntityMap = QMap<QUuid, QByteArray>;
+using PackedAvatarEntityMap = QMap<QUuid, QByteArray>; // similar to AvatarEntityMap, but different internal format
 using AvatarEntityIDs = QSet<QUuid>;
 
+using AvatarGrabDataMap = QMap<QUuid, QByteArray>;
+
 using AvatarDataSequenceNumber = uint16_t;
+
+const int MAX_NUM_AVATAR_ENTITIES = 42;
 
 // avatar motion behaviors
 const quint32 AVATAR_MOTION_ACTION_MOTOR_ENABLED = 1U << 0;
@@ -94,6 +100,9 @@ const quint32 AVATAR_MOTION_SCRIPTABLE_BITS =
 // Procedural audio to mouth movement is enabled 8th bit
 // Procedural Blink is enabled 9th bit
 // Procedural Eyelid is enabled 10th bit
+// Procedural PROCEDURAL_BLINK_FACE_MOVEMENT is enabled 11th bit
+// Procedural Collide with other avatars is enabled 12th bit
+// Procedural Has Hero Priority is enabled 13th bit
 
 const int KEY_STATE_START_BIT = 0; // 1st and 2nd bits
 const int HAND_STATE_START_BIT = 2; // 3rd and 4th bits
@@ -104,7 +113,8 @@ const int HAND_STATE_FINGER_POINTING_BIT = 7; // 8th bit
 const int AUDIO_ENABLED_FACE_MOVEMENT = 8; // 9th bit
 const int PROCEDURAL_EYE_FACE_MOVEMENT = 9; // 10th bit
 const int PROCEDURAL_BLINK_FACE_MOVEMENT = 10; // 11th bit
-
+const int COLLIDE_WITH_OTHER_AVATARS = 11; // 12th bit
+const int HAS_HERO_PRIORITY = 12; // 13th bit  (be scared)
 
 const char HAND_STATE_NULL = 0;
 const char LEFT_HAND_POINTING_FLAG = 1;
@@ -267,8 +277,8 @@ namespace AvatarDataPacket {
         uint8_t rotationValidityBits[ceil(numJoints / 8)];     // one bit per joint, if true then a compressed rotation follows.
         SixByteQuat rotation[numValidRotations];               // encodeded and compressed by packOrientationQuatToSixBytes()
         uint8_t translationValidityBits[ceil(numJoints / 8)];  // one bit per joint, if true then a compressed translation follows.
-        SixByteTrans translation[numValidTranslations];        // encodeded and compressed by packFloatVec3ToSignedTwoByteFixed()
-
+        float maxTranslationDimension;                         // used to normalize fixed point translation values.
+        SixByteTrans translation[numValidTranslations];        // normalized and compressed by packFloatVec3ToSignedTwoByteFixed()
         SixByteQuat leftHandControllerRotation;
         SixByteTrans leftHandControllerTranslation;
         SixByteQuat rightHandControllerRotation;
@@ -276,6 +286,7 @@ namespace AvatarDataPacket {
     };
     */
     size_t maxJointDataSize(size_t numJoints, bool hasGrabJoints);
+    size_t minJointDataSize(size_t numJoints);
 
     /*
     struct JointDefaultPoseFlags {
@@ -455,8 +466,6 @@ public:
 
     static const QUrl& defaultFullAvatarModelUrl();
 
-    virtual bool isMyAvatar() const { return false; }
-
     const QUuid getSessionUUID() const { return getID(); }
 
     glm::vec3 getHandPosition() const;
@@ -486,6 +495,8 @@ public:
     /// \param offset number of bytes into packet where data starts
     /// \return number of bytes parsed
     virtual int parseDataFromBuffer(const QByteArray& buffer);
+
+    virtual void setCollisionWithOtherAvatarsFlags() {};
 
     // Body Rotation (degrees)
     float getBodyYaw() const;
@@ -945,19 +956,20 @@ public:
     // FIXME: Can this name be improved? Can it be deprecated?
     Q_INVOKABLE virtual void setAttachmentsVariant(const QVariantList& variant);
 
+    virtual void storeAvatarEntityDataPayload(const QUuid& entityID, const QByteArray& payload);
 
     /**jsdoc
      * @function MyAvatar.updateAvatarEntity
      * @param {Uuid} entityID
      * @param {string} entityData
      */
-    Q_INVOKABLE void updateAvatarEntity(const QUuid& entityID, const QByteArray& entityData);
+    Q_INVOKABLE virtual void updateAvatarEntity(const QUuid& entityID, const QByteArray& entityData);
 
     /**jsdoc
      * @function MyAvatar.clearAvatarEntity
      * @param {Uuid} entityID
      */
-    Q_INVOKABLE void clearAvatarEntity(const QUuid& entityID, bool requiresRemovalFromTree = true);
+    Q_INVOKABLE virtual void clearAvatarEntity(const QUuid& entityID, bool requiresRemovalFromTree = true);
 
 
     /**jsdoc
@@ -1112,12 +1124,25 @@ public:
     int getAverageBytesReceivedPerSecond() const;
     int getReceiveRate() const;
 
+    // An Avatar can be set Priority from the AvatarMixer side.
+    bool getHasPriority() const { return _hasPriority; }
+    // regular setHasPriority does a check of state changed and if true reset 'additionalFlagsChanged' timestamp
+    void setHasPriority(bool hasPriority) {
+        if (_hasPriority != hasPriority) {
+            _additionalFlagsChanged = usecTimestampNow();
+            _hasPriority = hasPriority;
+        }
+    }
+    // In some cases, we want to assign the hasPRiority flag without reseting timestamp
+    void setHasPriorityWithoutTimestampReset(bool hasPriority) { _hasPriority = hasPriority; }
+
     const glm::vec3& getTargetVelocity() const { return _targetVelocity; }
 
     void clearRecordingBasis();
     TransformPointer getRecordingBasis() const;
     void setRecordingBasis(TransformPointer recordingBasis = TransformPointer());
     void createRecordingIDs();
+    virtual void avatarEntityDataToJson(QJsonObject& root) const;
     QJsonObject toJson() const;
     void fromJson(const QJsonObject& json, bool useFrameSkeleton = true);
 
@@ -1129,17 +1154,16 @@ public:
      * @function MyAvatar.getAvatarEntityData
      * @returns {object} 
      */
-    Q_INVOKABLE AvatarEntityMap getAvatarEntityData() const;
+    Q_INVOKABLE virtual AvatarEntityMap getAvatarEntityData() const;
 
     /**jsdoc
      * @function MyAvatar.setAvatarEntityData
      * @param {object} avatarEntityData
      */
-    Q_INVOKABLE void setAvatarEntityData(const AvatarEntityMap& avatarEntityData);
+    Q_INVOKABLE virtual void setAvatarEntityData(const AvatarEntityMap& avatarEntityData);
 
-    virtual void setAvatarEntityDataChanged(bool value) { _avatarEntityDataChanged = value; }
-    void insertDetachedEntityID(const QUuid entityID);
-    AvatarEntityIDs getAndClearRecentlyDetachedIDs();
+    void setAvatarEntityDataChanged(bool value) { _avatarEntityDataChanged = value; }
+    AvatarEntityIDs getAndClearRecentlyRemovedIDs();
 
     /**jsdoc
      * @function MyAvatar.getSensorToWorldMatrix
@@ -1262,12 +1286,12 @@ public slots:
      * @function MyAvatar.sendAvatarDataPacket
      * @param {boolean} [sendAll=false]
      */
-    void sendAvatarDataPacket(bool sendAll = false);
+    virtual int sendAvatarDataPacket(bool sendAll = false);
 
     /**jsdoc
      * @function MyAvatar.sendIdentityPacket
      */
-    void sendIdentityPacket();
+    int sendIdentityPacket();
 
     /**jsdoc
      * @function MyAvatar.setSessionUUID
@@ -1326,6 +1350,7 @@ public slots:
     void resetLastSent() { _lastToByteArray = 0; }
 
 protected:
+    void insertRemovedEntityID(const QUuid entityID);
     void lazyInitHeadData() const;
 
     float getDistanceBasedMinRotationDOT(glm::vec3 viewerPosition) const;
@@ -1341,6 +1366,13 @@ protected:
 
     bool hasParent() const { return !getParentID().isNull(); }
     bool hasFaceTracker() const { return _headData ? _headData->_isFaceTrackerConnected : false; }
+
+    qint64 packAvatarEntityTraitInstance(AvatarTraits::TraitType traitType,
+                                         AvatarTraits::TraitInstanceID traitInstanceID,
+                                         ExtendedIODevice& destination, AvatarTraits::TraitVersion traitVersion);
+    qint64 packGrabTraitInstance(AvatarTraits::TraitType traitType,
+                                 AvatarTraits::TraitInstanceID traitInstanceID,
+                                 ExtendedIODevice& destination, AvatarTraits::TraitVersion traitVersion);
 
     // isReplicated will be true on downstream Avatar Mixers and their clients, but false on the upstream "master"
     // Audio Mixer that the replicated avatar is connected to.
@@ -1447,10 +1479,14 @@ protected:
     AABox _defaultBubbleBox;
 
     mutable ReadWriteLockable _avatarEntitiesLock;
-    AvatarEntityIDs _avatarEntityDetached; // recently detached from this avatar
+    AvatarEntityIDs _avatarEntityRemoved; // recently removed AvatarEntity ids
     AvatarEntityIDs _avatarEntityForRecording; // create new entities id for avatar recording
-    AvatarEntityMap _avatarEntityData;
+    PackedAvatarEntityMap _packedAvatarEntityData;
     bool _avatarEntityDataChanged { false };
+
+    mutable ReadWriteLockable _avatarGrabsLock;
+    AvatarGrabDataMap _avatarGrabData;
+    bool _avatarGrabDataChanged { false }; // by network
 
     // used to transform any sensor into world space, including the _hmdSensorMat, or hand controllers.
     ThreadSafeValueCache<glm::mat4> _sensorToWorldMatrixCache { glm::mat4() };
@@ -1476,6 +1512,8 @@ protected:
     int _replicaIndex { 0 };
     bool _isNewAvatar { true };
     bool _isClientAvatar { false };
+    bool _collideWithOtherAvatars { true };
+    bool _hasPriority{ false };
 
     // null unless MyAvatar or ScriptableAvatar sending traits data to mixer
     std::unique_ptr<ClientTraitsHandler, LaterDeleter> _clientTraitsHandler;
@@ -1510,6 +1548,9 @@ protected:
         }
         f(index);
     }
+
+    bool updateAvatarGrabData(const QUuid& grabID, const QByteArray& grabData);
+    virtual void clearAvatarGrabData(const QUuid& grabID);
 
 private:
     friend void avatarStateFromFrame(const QByteArray& frameData, AvatarData* _avatar);
@@ -1590,6 +1631,7 @@ public:
     BoxFace face;
     glm::vec3 intersection;
     glm::vec3 surfaceNormal;
+    int jointIndex { -1 };
     QVariantMap extraInfo;
 };
 Q_DECLARE_METATYPE(RayToAvatarIntersectionResult)
@@ -1614,6 +1656,7 @@ QScriptValue AvatarEntityMapToScriptValue(QScriptEngine* engine, const AvatarEnt
 void AvatarEntityMapFromScriptValue(const QScriptValue& object, AvatarEntityMap& value);
 
 // faux joint indexes (-1 means invalid)
+const int NO_JOINT_INDEX = 65535; // -1
 const int SENSOR_TO_WORLD_MATRIX_INDEX = 65534; // -2
 const int CONTROLLER_RIGHTHAND_INDEX = 65533; // -3
 const int CONTROLLER_LEFTHAND_INDEX = 65532; // -4
@@ -1626,5 +1669,6 @@ const int FARGRAB_MOUSE_INDEX = 65526; // -10
 
 const int LOWEST_PSEUDO_JOINT_INDEX = 65526;
 
+const int MAX_NUM_AVATAR_GRABS = 6;
 
 #endif // hifi_AvatarData_h

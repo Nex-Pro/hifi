@@ -11,7 +11,6 @@ const DESCENDING_SORT = -1;
 const ASCENDING_STRING = '&#x25B4;';
 const DESCENDING_STRING = '&#x25BE;';
 const BYTES_PER_MEGABYTE = 1024 * 1024;
-const IMAGE_MODEL_NAME = 'default-image-model.fbx';
 const COLLAPSE_EXTRA_INFO = "E";
 const EXPAND_EXTRA_INFO = "D";
 const FILTER_IN_VIEW_ATTRIBUTE = "pressed";
@@ -25,6 +24,19 @@ const DELTA_X_MOVE_COLUMNS_THRESHOLD = 2;
 const DELTA_X_COLUMN_SWAP_POSITION = 5;
 const CERTIFIED_PLACEHOLDER = "** Certified **";
 
+function decimalMegabytes(number) {
+    return number ? (number / BYTES_PER_MEGABYTE).toFixed(1) : "";
+}
+
+function displayIfNonZero(number) {
+    return number ? number : "";
+}
+
+function getFilename(url) {
+    let urlParts = url.split('/');
+    return urlParts[urlParts.length - 1];
+}
+
 const COLUMNS = {
     type: {
         columnHeader: "Type",
@@ -32,6 +44,7 @@ const COLUMNS = {
         initialWidth: 0.16,
         initiallyShown: true,
         alwaysShown: true,
+        defaultSortOrder: ASCENDING_SORT,
     },
     name: {
         columnHeader: "Name",
@@ -39,6 +52,7 @@ const COLUMNS = {
         initialWidth: 0.34,
         initiallyShown: true,
         alwaysShown: true,
+        defaultSortOrder: ASCENDING_SORT,
     },
     url: {
         columnHeader: "File",
@@ -46,6 +60,7 @@ const COLUMNS = {
         propertyID: "url",
         initialWidth: 0.34,
         initiallyShown: true,
+        defaultSortOrder: ASCENDING_SORT,
     },
     locked: {
         columnHeader: "&#xe006;",
@@ -54,6 +69,7 @@ const COLUMNS = {
         initialWidth: 0.08,
         initiallyShown: true,
         alwaysShown: true,
+        defaultSortOrder: DESCENDING_SORT,
     },
     visible: {
         columnHeader: "&#xe007;",
@@ -62,24 +78,29 @@ const COLUMNS = {
         initialWidth: 0.08,
         initiallyShown: true,
         alwaysShown: true,
+        defaultSortOrder: DESCENDING_SORT,
     },
     verticesCount: {
         columnHeader: "Verts",
         dropdownLabel: "Vertices",
         propertyID: "verticesCount",
         initialWidth: 0.08,
+        defaultSortOrder: DESCENDING_SORT,
     },
     texturesCount: {
         columnHeader: "Texts",
         dropdownLabel: "Textures",
         propertyID: "texturesCount",
         initialWidth: 0.08,
+        defaultSortOrder: DESCENDING_SORT,
     },
     texturesSize: {
         columnHeader: "Text MB",
         dropdownLabel: "Texture Size",
         propertyID: "texturesSize",
         initialWidth: 0.10,
+        format: decimalMegabytes,
+        defaultSortOrder: DESCENDING_SORT,
     },
     hasTransparent: {
         columnHeader: "&#xe00b;",
@@ -87,6 +108,7 @@ const COLUMNS = {
         dropdownLabel: "Transparency",
         propertyID: "hasTransparent",
         initialWidth: 0.04,
+        defaultSortOrder: DESCENDING_SORT,
     },
     isBaked: {
         columnHeader: "&#xe01a;",
@@ -94,12 +116,14 @@ const COLUMNS = {
         dropdownLabel: "Baked",
         propertyID: "isBaked",
         initialWidth: 0.08,
+        defaultSortOrder: DESCENDING_SORT,
     },
     drawCalls: {
         columnHeader: "Draws",
         dropdownLabel: "Draws",
         propertyID: "drawCalls",
         initialWidth: 0.08,
+        defaultSortOrder: DESCENDING_SORT,
     },
     hasScript: {
         columnHeader: "k",
@@ -107,25 +131,8 @@ const COLUMNS = {
         dropdownLabel: "Script",
         propertyID: "hasScript",
         initialWidth: 0.06,
+        defaultSortOrder: DESCENDING_SORT,
     },
-};
-
-const COMPARE_ASCENDING = function(a, b) {
-    let va = a[currentSortColumnID];
-    let vb = b[currentSortColumnID];
-
-    if (va < vb) {
-        return -1;
-    }  else if (va > vb) {
-        return 1;
-    } else if (a.id < b.id) {
-        return -1;
-    }
-
-    return 1;
-};
-const COMPARE_DESCENDING = function(a, b) {
-    return COMPARE_ASCENDING(b, a);
 };
 
 const FILTER_TYPES = [
@@ -140,21 +147,8 @@ const FILTER_TYPES = [
     "PolyLine",
     "PolyVox",
     "Text",
+    "Grid",
 ];
-
-const ICON_FOR_TYPE = {
-    Shape: "n",
-    Model: "&#xe008;",
-    Image: "&#xe02a;",
-    Light: "p",
-    Zone: "o",
-    Web: "q",
-    Material: "&#xe00b;",
-    ParticleEffect: "&#xe004;",
-    PolyLine: "&#xe01b;",
-    PolyVox: "&#xe005;",
-    Text: "l",
-};
 
 const DOUBLE_CLICK_TIMEOUT = 300; // ms
 const RENAME_COOLDOWN = 400; // ms
@@ -194,6 +188,7 @@ let renameTimeout = null;
 let renameLastBlur = null;
 let renameLastEntityID = null;
 let isRenameFieldBeingMoved = false;
+let elFilterTypeInputs = {};
 
 let elEntityTable,
     elEntityTableHeader,
@@ -207,6 +202,9 @@ let elEntityTable,
     elFilterTypeMultiselectBox,
     elFilterTypeText,
     elFilterTypeOptions,
+    elFilterTypeOptionsButtons,
+    elFilterTypeSelectAll,
+    elFilterTypeClearAll,
     elFilterSearch,
     elFilterInView,
     elFilterRadius,
@@ -249,6 +247,9 @@ function loaded() {
         elFilterTypeMultiselectBox = document.getElementById("filter-type-multiselect-box");
         elFilterTypeText = document.getElementById("filter-type-text");
         elFilterTypeOptions = document.getElementById("filter-type-options");
+        elFilterTypeOptionsButtons = document.getElementById("filter-type-options-buttons");
+        elFilterTypeSelectAll = document.getElementById('filter-type-select-all');
+        elFilterTypeClearAll = document.getElementById('filter-type-clear-all');
         elFilterSearch = document.getElementById("filter-search");
         elFilterInView = document.getElementById("filter-in-view");
         elFilterRadius = document.getElementById("filter-radius");
@@ -282,6 +283,8 @@ function loaded() {
         };
         elRefresh.onclick = refreshEntities;
         elFilterTypeMultiselectBox.onclick = onToggleTypeDropdown;
+        elFilterTypeSelectAll.onclick = onSelectAllTypes;
+        elFilterTypeClearAll.onclick = onClearAllTypes;
         elFilterSearch.onkeyup = refreshEntityList;
         elFilterSearch.onsearch = refreshEntityList;
         elFilterInView.onclick = onToggleFilterInView;
@@ -296,13 +299,14 @@ function loaded() {
             
             let elDiv = document.createElement('div');
             elDiv.onclick = onToggleTypeFilter;
-            elFilterTypeOptions.appendChild(elDiv);
+            elFilterTypeOptions.insertBefore(elDiv, elFilterTypeOptionsButtons);
             
             let elInput = document.createElement('input');
             elInput.setAttribute("type", "checkbox");
             elInput.setAttribute("id", typeFilterID);
             elInput.setAttribute("filterType", type);
             elInput.checked = true; // all types are checked initially
+            elFilterTypeInputs[type] = elInput;
             elDiv.appendChild(elInput);
             
             let elLabel = document.createElement('label');
@@ -312,7 +316,7 @@ function loaded() {
             
             let elSpan = document.createElement('span');
             elSpan.setAttribute("class", "typeIcon");
-            elSpan.innerHTML = ICON_FOR_TYPE[type];
+            elSpan.innerHTML = ENTITY_TYPE_ICON[type];
 
             elLabel.insertBefore(elSpan, elLabel.childNodes[0]);
             
@@ -455,7 +459,7 @@ function loaded() {
                 isRenameFieldBeingMoved = true;
                 document.body.appendChild(elRenameInput);
                 // keep the focus
-                elRenameInput.select();
+                elRenameInput.focus();
             }
         }
 
@@ -471,7 +475,7 @@ function loaded() {
             elCell.innerHTML = "";
             elCell.appendChild(elRenameInput);
             // keep the focus
-            elRenameInput.select();
+            elRenameInput.focus();
             isRenameFieldBeingMoved = false;
         }
 
@@ -606,19 +610,6 @@ function loaded() {
             }));
         }
         
-        function decimalMegabytes(number) {
-            return number ? (number / BYTES_PER_MEGABYTE).toFixed(1) : "";
-        }
-
-        function displayIfNonZero(number) {
-            return number ? number : "";
-        }
-
-        function getFilename(url) {
-            let urlParts = url.split('/');
-            return urlParts[urlParts.length - 1];
-        }
-        
         function updateEntityData(entityData) {
             entities = [];
             entitiesByID = {};
@@ -628,9 +619,6 @@ function loaded() {
                 entityData.forEach(function(entity) {
                     let type = entity.type;
                     let filename = getFilename(entity.url);
-                    if (filename === IMAGE_MODEL_NAME) {
-                        type = "Image";
-                    }
             
                     let entityData = {
                         id: entity.id,
@@ -643,7 +631,7 @@ function loaded() {
                         certificateID: entity.certificateID,
                         verticesCount: displayIfNonZero(entity.verticesCount),
                         texturesCount: displayIfNonZero(entity.texturesCount),
-                        texturesSize: decimalMegabytes(entity.texturesSize),
+                        texturesSize: entity.texturesSize,
                         hasTransparent: entity.hasTransparent,
                         isBaked: entity.isBaked,
                         drawCalls: displayIfNonZero(entity.drawCalls),
@@ -659,6 +647,10 @@ function loaded() {
             
             refreshEntityList();
         }
+
+        const isNullOrEmpty = function(value) {
+            return value === undefined || value === null || value === "";
+        };
         
         function refreshEntityList() {
             PROFILE("refresh-entity-list", function() {
@@ -676,8 +668,34 @@ function loaded() {
                 });
                 
                 PROFILE("sort", function() {
-                    let cmp = currentSortOrder === ASCENDING_SORT ? COMPARE_ASCENDING : COMPARE_DESCENDING;
-                    visibleEntities.sort(cmp);
+                    let isAscendingSort = currentSortOrder === ASCENDING_SORT;
+                    let isDefaultSort = currentSortOrder === COLUMNS[currentSortColumnID].defaultSortOrder;
+                    visibleEntities.sort((entityA, entityB) => {
+                        /**
+                         * If the default sort is ascending, empty should be considered largest.
+                         * If the default sort is descending, empty should be considered smallest.
+                         */
+                        if (!isAscendingSort) {
+                            [entityA, entityB] = [entityB, entityA];
+                        }
+                        let valueA = entityA[currentSortColumnID];
+                        let valueB = entityB[currentSortColumnID];
+
+                        if (valueA === valueB) {
+                            return entityA.id < entityB.id ? -1 : 1;
+                        }
+
+                        if (isNullOrEmpty(valueA)) {
+                            return (isDefaultSort ? 1 : -1) * (isAscendingSort ? 1 : -1);
+                        }
+                        if (isNullOrEmpty(valueB)) {
+                            return (isDefaultSort ? -1 : 1) * (isAscendingSort ? 1 : -1);
+                        }
+                        if (typeof(valueA) === "string") {
+                            return valueA.localeCompare(valueB);
+                        }
+                        return valueA < valueB ? -1 : 1;
+                    });
                 });
 
                 PROFILE("update-dom", function() {
@@ -773,7 +791,7 @@ function loaded() {
                 } else {
                     elSortOrders[currentSortColumnID].innerHTML = "";
                     currentSortColumnID = columnID;
-                    currentSortOrder = ASCENDING_SORT;
+                    currentSortOrder = COLUMNS[currentSortColumnID].defaultSortOrder;
                 }
                 refreshSortOrder();
                 refreshEntityList();
@@ -878,7 +896,11 @@ function loaded() {
                 if (column.data.glyph) {
                     elCell.innerHTML = itemData[column.data.propertyID] ? column.data.columnHeader : null;
                 } else {
-                    elCell.innerHTML = itemData[column.data.propertyID];
+                    let value = itemData[column.data.propertyID];
+                    if (column.data.format) {
+                        value = column.data.format(value);
+                    }
+                    elCell.innerHTML = value;
                 }
                 elCell.style = "min-width:" + column.widthPx + "px;" + "max-width:" + column.widthPx + "px;";
                 elCell.className = createColumnClassName(column.columnID);
@@ -1053,7 +1075,21 @@ function loaded() {
             event.stopPropagation();
         }
         
-        function toggleTypeFilter(elInput, refresh) {
+        function refreshTypeFilter(refreshList) {
+            if (typeFilters.length === 0) {
+                elFilterTypeText.innerText = "No Types";
+            } else if (typeFilters.length === FILTER_TYPES.length) {
+                elFilterTypeText.innerText = "All Types";
+            } else {
+                elFilterTypeText.innerText = "Types...";
+            }
+            
+            if (refreshList) {
+                refreshEntityList();
+            }
+        }
+        
+        function toggleTypeFilter(elInput, refreshList) {
             let type = elInput.getAttribute("filterType");
             let typeChecked = elInput.checked;
             
@@ -1064,17 +1100,7 @@ function loaded() {
                 typeFilters.push(type);
             }
             
-            if (typeFilters.length === 0) {
-                elFilterTypeText.innerText = "No Types";
-            } else if (typeFilters.length === FILTER_TYPES.length) {
-                elFilterTypeText.innerText = "All Types";
-            } else {
-                elFilterTypeText.innerText = "Types...";
-            }
-            
-            if (refresh) {
-                refreshEntityList();
-            }
+            refreshTypeFilter(refreshList);
         }
         
         function onToggleTypeFilter(event) {
@@ -1082,6 +1108,24 @@ function loaded() {
             if (elTarget instanceof HTMLInputElement) {
                 toggleTypeFilter(elTarget, true);
             }
+            event.stopPropagation();
+        }
+        
+        function onSelectAllTypes(event) {
+            for (let type in elFilterTypeInputs) {
+                elFilterTypeInputs[type].checked = true;
+            }
+            typeFilters = FILTER_TYPES;
+            refreshTypeFilter(true);
+            event.stopPropagation();
+        }
+        
+        function onClearAllTypes(event) {
+            for (let type in elFilterTypeInputs) {
+                elFilterTypeInputs[type].checked = false;
+            }
+            typeFilters = [];
+            refreshTypeFilter(true);
             event.stopPropagation();
         }
         

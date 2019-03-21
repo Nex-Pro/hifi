@@ -9,23 +9,6 @@
 
 /* global alert, augmentSpinButtons, clearTimeout, console, document, Element, 
    EventBridge, JSONEditor, openEventBridge, setTimeout, window, _ $ */
-    
-const ICON_FOR_TYPE = {
-    Box: "V",
-    Sphere: "n",
-    Shape: "n",
-    ParticleEffect: "&#xe004;",
-    Model: "&#xe008;",
-    Web: "q",
-    Image: "&#xe02a;",
-    Text: "l",
-    Light: "p",
-    Zone: "o",
-    PolyVox: "&#xe005;",
-    Multiple: "&#xe000;",
-    PolyLine: "&#xe01b;",
-    Material: "&#xe00b;"
-};  
 
 const DEGREES_TO_RADIANS = Math.PI / 180.0;
 
@@ -44,7 +27,7 @@ const GROUPS = [
             {
                 label: NO_SELECTION,
                 type: "icon",
-                icons: ICON_FOR_TYPE,
+                icons: ENTITY_TYPE_ICON,
                 propertyID: "type",
                 replaceID: "placeholder-property-type",
             },
@@ -75,7 +58,7 @@ const GROUPS = [
             },
             {
                 label: "Parent Joint Index",
-                type: "number-draggable",
+                type: "number",
                 propertyID: "parentJointIndex",
             },
             {
@@ -129,23 +112,71 @@ const GROUPS = [
                 propertyID: "textColor",
             },
             {
+                label: "Text Alpha",
+                type: "number-draggable",
+                min: 0,
+                max: 1,
+                step: 0.01,
+                decimals: 2,
+                propertyID: "textAlpha",
+            },
+            {
                 label: "Background Color",
                 type: "color",
                 propertyID: "backgroundColor",
             },
             {
+                label: "Background Alpha",
+                type: "number-draggable",
+                min: 0,
+                max: 1,
+                step: 0.01,
+                decimals: 2,
+                propertyID: "backgroundAlpha",
+            },
+            {
                 label: "Line Height",
                 type: "number-draggable",
                 min: 0,
-                step: 0.005,
+                step: 0.001,
                 decimals: 4,
                 unit: "m",
-                propertyID: "lineHeight"
+                propertyID: "lineHeight",
             },
             {
-                label: "Face Camera",
-                type: "bool",
-                propertyID: "faceCamera"
+                label: "Billboard Mode",
+                type: "dropdown",
+                options: { none: "None", yaw: "Yaw", full: "Full"},
+                propertyID: "textBillboardMode",
+                propertyName: "billboardMode", // actual entity property name
+            },
+            {
+                label: "Top Margin",
+                type: "number-draggable",
+                step: 0.01,
+                decimals: 2,
+                propertyID: "topMargin",
+            },
+            {
+                label: "Right Margin",
+                type: "number-draggable",
+                step: 0.01,
+                decimals: 2,
+                propertyID: "rightMargin",
+            },
+            {
+                label: "Bottom Margin",
+                type: "number-draggable",
+                step: 0.01,
+                decimals: 2,
+                propertyID: "bottomMargin",
+            },
+            {
+                label: "Left Margin",
+                type: "number-draggable",
+                step: 0.01,
+                decimals: 2,
+                propertyID: "leftMargin",
             },
         ]
     },
@@ -153,6 +184,20 @@ const GROUPS = [
         id: "zone",
         addToGroup: "base",
         properties: [
+            {
+                label: "Shape Type",
+                type: "dropdown",
+                options: { "box": "Box", "sphere": "Sphere", "ellipsoid": "Ellipsoid", 
+                           "cylinder-y": "Cylinder", "compound": "Use Compound Shape URL" },
+                propertyID: "zoneShapeType",
+                propertyName: "shapeType", // actual entity property name
+            },
+            {
+                label: "Compound Shape URL",
+                type: "string",
+                propertyID: "zoneCompoundShapeURL",
+                propertyName: "compoundShapeURL", // actual entity property name
+            },
             {
                 label: "Flying Allowed",
                 type: "bool",
@@ -185,8 +230,8 @@ const GROUPS = [
                 label: "Light Intensity",
                 type: "number-draggable",
                 min: 0,
-                max: 10,
-                step: 0.1,
+                max: 40,
+                step: 0.01,
                 decimals: 2,
                 propertyID: "keyLight.intensity",
                 showPropertyRule: { "keyLightMode": "enabled" },
@@ -194,6 +239,7 @@ const GROUPS = [
             {
                 label: "Light Horizontal Angle",
                 type: "number-draggable",
+                step: 0.1,
                 multiplier: DEGREES_TO_RADIANS,
                 decimals: 2,
                 unit: "deg",
@@ -203,6 +249,7 @@ const GROUPS = [
             {
                 label: "Light Vertical Angle",
                 type: "number-draggable",
+                step: 0.1,
                 multiplier: DEGREES_TO_RADIANS,
                 decimals: 2,
                 unit: "deg",
@@ -243,7 +290,7 @@ const GROUPS = [
                 label: "Ambient Intensity",
                 type: "number-draggable",
                 min: 0,
-                max: 10,
+                max: 200,
                 step: 0.1,
                 decimals: 2,
                 propertyID: "ambientLight.ambientIntensity",
@@ -271,9 +318,9 @@ const GROUPS = [
             {
                 label: "Range",
                 type: "number-draggable",
-                min: 5,
+                min: 1,
                 max: 10000,
-                step: 5,
+                step: 1,
                 decimals: 0,
                 unit: "m",
                 propertyID: "haze.hazeRange",
@@ -290,7 +337,7 @@ const GROUPS = [
                 type: "number-draggable",
                 min: -1000,
                 max: 1000,
-                step: 10,
+                step: 1,
                 decimals: 0,
                 unit: "m",
                 propertyID: "haze.hazeBaseRef",
@@ -301,7 +348,7 @@ const GROUPS = [
                 type: "number-draggable",
                 min: -1000,
                 max: 5000,
-                step: 10,
+                step: 1,
                 decimals: 0,
                 unit: "m",
                 propertyID: "haze.hazeCeiling",
@@ -318,8 +365,8 @@ const GROUPS = [
                 type: "number-draggable",
                 min: 0,
                 max: 1,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 3,
                 propertyID: "haze.hazeBackgroundBlend",
                 showPropertyRule: { "hazeMode": "enabled" },
             },
@@ -356,8 +403,8 @@ const GROUPS = [
                 type: "number-draggable",
                 min: 0,
                 max: 1,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 3,
                 propertyID: "bloom.bloomIntensity",
                 showPropertyRule: { "bloomMode": "enabled" },
             },
@@ -366,8 +413,8 @@ const GROUPS = [
                 type: "number-draggable",
                 min: 0,
                 max: 1,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 3,
                 propertyID: "bloom.bloomThreshold",
                 showPropertyRule: { "bloomMode": "enabled" },
             },
@@ -376,11 +423,18 @@ const GROUPS = [
                 type: "number-draggable",
                 min: 0,
                 max: 2,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 3,
                 propertyID: "bloom.bloomSize",
                 showPropertyRule: { "bloomMode": "enabled" },
             },
+            {
+                label: "Avatar Priority",
+                type: "dropdown",
+                options: { inherit: "Inherit", crowd: "Crowd", hero: "Hero" },
+                propertyID: "avatarPriority",
+            },
+
         ]
     },
     {
@@ -476,7 +530,38 @@ const GROUPS = [
                 label: "Image",
                 type: "string",
                 placeholder: "URL",
-                propertyID: "image",
+                propertyID: "imageURL",
+            },
+            {
+                label: "Color",
+                type: "color",
+                propertyID: "imageColor",
+                propertyName: "color", // actual entity property name
+            },
+            {
+                label: "Emissive",
+                type: "bool",
+                propertyID: "emissive",
+            },
+            {
+                label: "Sub Image",
+                type: "rect",
+                min: 0,
+                step: 1,
+                subLabels: [ "x", "y", "w", "h" ],
+                propertyID: "subImage",
+            },
+            {
+                label: "Billboard Mode",
+                type: "dropdown",
+                options: { none: "None", yaw: "Yaw", full: "Full"},
+                propertyID: "imageBillboardMode",
+                propertyName: "billboardMode", // actual entity property name
+            },
+            {
+                label: "Keep Aspect Ratio",
+                type: "bool",
+                propertyID: "keepAspectRatio",
             },
         ]
     },
@@ -510,16 +595,18 @@ const GROUPS = [
                 label: "Intensity",
                 type: "number-draggable",
                 min: 0,
+                max: 10000,
                 step: 0.1,
-                decimals: 1,
+                decimals: 2,
                 propertyID: "intensity",
             },
             {
                 label: "Fall-Off Radius",
                 type: "number-draggable",
                 min: 0,
+                max: 10000,
                 step: 0.1,
-                decimals: 1,
+                decimals: 2,
                 unit: "m",
                 propertyID: "falloffRadius",
             },
@@ -531,6 +618,7 @@ const GROUPS = [
             {
                 label: "Spotlight Exponent",
                 type: "number-draggable",
+                min: 0,
                 step: 0.01,
                 decimals: 2,
                 propertyID: "exponent",
@@ -631,6 +719,39 @@ const GROUPS = [
         ]
     },
     {
+        id: "grid",
+        addToGroup: "base",
+        properties: [
+            {
+                label: "Color",
+                type: "color",
+                propertyID: "gridColor",
+                propertyName: "color", // actual entity property name
+            },
+            {
+                label: "Follow Camera",
+                type: "bool",
+                propertyID: "followCamera",
+            },
+            {
+                label: "Major Grid Every",
+                type: "number-draggable",
+                min: 0,
+                step: 1,
+                decimals: 0,
+                propertyID: "majorGridEvery",
+            },
+            {
+                label: "Minor Grid Every",
+                type: "number-draggable",
+                min: 0,
+                step: 0.01,
+                decimals: 2,
+                propertyID: "minorGridEvery",
+            },
+        ]
+    },
+    {
         id: "particles",
         addToGroup: "base",
         properties: [
@@ -643,8 +764,6 @@ const GROUPS = [
                 label: "Lifespan",
                 type: "number-draggable",
                 unit: "s",
-                min: 0.01,
-                max: 10,
                 step: 0.01,
                 decimals: 2,
                 propertyID: "lifespan",
@@ -652,8 +771,6 @@ const GROUPS = [
             {
                 label: "Max Particles",
                 type: "number-draggable",
-                min: 1,
-                max: 10000,
                 step: 1,
                 propertyID: "maxParticles",
             },
@@ -673,26 +790,20 @@ const GROUPS = [
             {
                 label: "Emit Rate",
                 type: "number-draggable",
-                min: 1,
-                max: 1000,
                 step: 1,
                 propertyID: "emitRate",
             },
             {
                 label: "Emit Speed",
                 type: "number-draggable",
-                min: 0,
-                max: 5,
-                step: 0.01,
+                step: 0.1,
                 decimals: 2,
                 propertyID: "emitSpeed",
             },
             {
                 label: "Speed Spread",
                 type: "number-draggable",
-                min: 0,
-                max: 5,
-                step: 0.01,
+                step: 0.1,
                 decimals: 2,
                 propertyID: "speedSpread",
             },
@@ -700,7 +811,6 @@ const GROUPS = [
                 label: "Emit Dimensions",
                 type: "vec3",
                 vec3Type: "xyz",
-                min: 0,
                 step: 0.01,
                 round: 100,
                 subLabels: [ "x", "y", "z" ],
@@ -709,10 +819,8 @@ const GROUPS = [
             {
                 label: "Emit Radius Start",
                 type: "number-draggable",
-                min: 0,
-                max: 1,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 3,
                 propertyID: "emitRadiusStart"
             },
             {
@@ -745,8 +853,6 @@ const GROUPS = [
                     {
                         label: "Start",
                         type: "number-draggable",
-                        min: 0,
-                        max: 4,
                         step: 0.01,
                         decimals: 2,
                         propertyID: "radiusStart",
@@ -755,8 +861,6 @@ const GROUPS = [
                     {
                         label: "Middle",
                         type: "number-draggable",
-                        min: 0,
-                        max: 4,
                         step: 0.01,
                         decimals: 2,
                         propertyID: "particleRadius",
@@ -764,8 +868,6 @@ const GROUPS = [
                     {
                         label: "Finish",
                         type: "number-draggable",
-                        min: 0,
-                        max: 4,
                         step: 0.01,
                         decimals: 2,
                         propertyID: "radiusFinish",
@@ -776,8 +878,6 @@ const GROUPS = [
             {
                 label: "Size Spread",
                 type: "number-draggable",
-                min: 0,
-                max: 4,
                 step: 0.01,
                 decimals: 2,
                 propertyID: "radiusSpread",
@@ -834,29 +934,23 @@ const GROUPS = [
                     {
                         label: "Start",
                         type: "number-draggable",
-                        min: 0,
-                        max: 1,
-                        step: 0.01,
-                        decimals: 2,
+                        step: 0.001,
+                        decimals: 3,
                         propertyID: "alphaStart",
                         fallbackProperty: "alpha",
                     },
                     {
                         label: "Middle",
                         type: "number-draggable",
-                        min: 0,
-                        max: 1,
-                        step: 0.01,
-                        decimals: 2,
+                        step: 0.001,
+                        decimals: 3,
                         propertyID: "alpha",
                     },
                     {
                         label: "Finish",
                         type: "number-draggable",
-                        min: 0,
-                        max: 1,
-                        step: 0.01,
-                        decimals: 2,
+                        step: 0.001,
+                        decimals: 3,
                         propertyID: "alphaFinish",
                         fallbackProperty: "alpha",
                     },
@@ -865,10 +959,8 @@ const GROUPS = [
             {
                 label: "Alpha Spread",
                 type: "number-draggable",
-                min: 0,
-                max: 1,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 3,
                 propertyID: "alphaSpread",
             },
         ]
@@ -911,10 +1003,8 @@ const GROUPS = [
                     {
                         label: "Start",
                         type: "number-draggable",
-                        min: -360,
-                        max: 360,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "spinStart",
@@ -923,10 +1013,8 @@ const GROUPS = [
                     {
                         label: "Middle",
                         type: "number-draggable",
-                        min: -360,
-                        max: 360,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "particleSpin",
@@ -934,10 +1022,8 @@ const GROUPS = [
                     {
                         label: "Finish",
                         type: "number-draggable",
-                        min: -360,
-                        max: 360,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "spinFinish",
@@ -948,10 +1034,8 @@ const GROUPS = [
             {
                 label: "Spin Spread",
                 type: "number-draggable",
-                min: 0,
-                max: 360,
-                step: 1,
-                decimals: 0,
+                step: 0.1,
+                decimals: 2,
                 multiplier: DEGREES_TO_RADIANS,
                 unit: "deg",
                 propertyID: "spinSpread",
@@ -976,10 +1060,8 @@ const GROUPS = [
                     {
                         label: "Start",
                         type: "number-draggable",
-                        min: 0,
-                        max: 180,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "polarStart",
@@ -987,10 +1069,8 @@ const GROUPS = [
                     {
                         label: "Finish",
                         type: "number-draggable",
-                        min: 0,
-                        max: 180,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "polarFinish",
@@ -1005,10 +1085,8 @@ const GROUPS = [
                     {
                         label: "Start",
                         type: "number-draggable",
-                        min: -180,
-                        max: 180,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "azimuthStart",
@@ -1016,10 +1094,8 @@ const GROUPS = [
                     {
                         label: "Finish",
                         type: "number-draggable",
-                        min: -180,
-                        max: 180,
-                        step: 1,
-                        decimals: 0,
+                        step: 0.1,
+                        decimals: 2,
                         multiplier: DEGREES_TO_RADIANS,
                         unit: "deg",
                         propertyID: "azimuthFinish",
@@ -1036,6 +1112,7 @@ const GROUPS = [
                 label: "Position",
                 type: "vec3",
                 vec3Type: "xyz",
+                step: 0.1,
                 decimals: 4,
                 subLabels: [ "x", "y", "z" ],
                 unit: "m",
@@ -1046,6 +1123,7 @@ const GROUPS = [
                 label: "Local Position",
                 type: "vec3",
                 vec3Type: "xyz",
+                step: 0.1,
                 decimals: 4,
                 subLabels: [ "x", "y", "z" ],
                 unit: "m",
@@ -1078,8 +1156,7 @@ const GROUPS = [
                 label: "Dimensions",
                 type: "vec3",
                 vec3Type: "xyz",
-                min: 0,
-                step: 0.1,
+                step: 0.01,
                 decimals: 4,
                 subLabels: [ "x", "y", "z" ],
                 unit: "m",
@@ -1090,8 +1167,7 @@ const GROUPS = [
                 label: "Local Dimensions",
                 type: "vec3",
                 vec3Type: "xyz",
-                min: 0,
-                step: 0.1,
+                step: 0.01,
                 decimals: 4,
                 subLabels: [ "x", "y", "z" ],
                 unit: "m",
@@ -1111,7 +1187,7 @@ const GROUPS = [
                 label: "Pivot",
                 type: "vec3",
                 vec3Type: "xyz",
-                step: 0.1,
+                step: 0.001,
                 decimals: 4,
                 subLabels: [ "x", "y", "z" ],
                 unit: "(ratio of dimension)",
@@ -1143,6 +1219,7 @@ const GROUPS = [
             {
                 label: "Clone Lifetime",
                 type: "number-draggable",
+                min: -1,
                 unit: "s",
                 propertyID: "cloneLifetime",
                 showPropertyRule: { "cloneable": "true" },
@@ -1150,6 +1227,7 @@ const GROUPS = [
             {
                 label: "Clone Limit",
                 type: "number-draggable",
+                min: 0,
                 propertyID: "cloneLimit",
                 showPropertyRule: { "cloneable": "true" },
             },
@@ -1296,7 +1374,7 @@ const GROUPS = [
                 label: "Linear Velocity",
                 type: "vec3",
                 vec3Type: "xyz",
-                step: 0.1,
+                step: 0.01,
                 decimals: 4,
                 subLabels: [ "x", "y", "z" ],
                 unit: "m/s",
@@ -1307,8 +1385,8 @@ const GROUPS = [
                 type: "number-draggable",
                 min: 0,
                 max: 1,
-                step: 0.01,
-                decimals: 2,
+                step: 0.001,
+                decimals: 4,
                 propertyID: "damping",
             },
             {
@@ -1326,33 +1404,27 @@ const GROUPS = [
                 type: "number-draggable",
                 min: 0,
                 max: 1,
-                step: 0.01,
+                step: 0.001,
                 decimals: 4,
                 propertyID: "angularDamping",
             },
             {
                 label: "Bounciness",
                 type: "number-draggable",
-                min: 0,
-                max: 1,
-                step: 0.01,
+                step: 0.001,
                 decimals: 4,
                 propertyID: "restitution",
             },
             {
                 label: "Friction",
                 type: "number-draggable",
-                min: 0,
-                max: 10,
-                step: 0.1,
+                step: 0.01,
                 decimals: 4,
                 propertyID: "friction",
             },
             {
                 label: "Density",
                 type: "number-draggable",
-                min: 100,
-                max: 10000,
                 step: 1,
                 decimals: 4,
                 propertyID: "density",
@@ -1372,6 +1444,7 @@ const GROUPS = [
                 type: "vec3",
                 vec3Type: "xyz",
                 subLabels: [ "x", "y", "z" ],
+                step: 0.1,
                 decimals: 4,
                 unit: "m/s<sup>2</sup>",
                 propertyID: "acceleration",
@@ -1384,7 +1457,7 @@ const GROUPS_PER_TYPE = {
   None: [ 'base', 'spatial', 'behavior', 'collision', 'physics' ],
   Shape: [ 'base', 'shape', 'spatial', 'behavior', 'collision', 'physics' ],
   Text: [ 'base', 'text', 'spatial', 'behavior', 'collision', 'physics' ],
-  Zone: [ 'base', 'zone', 'spatial', 'behavior', 'collision', 'physics' ],
+  Zone: [ 'base', 'zone', 'spatial', 'behavior', 'physics' ],
   Model: [ 'base', 'model', 'spatial', 'behavior', 'collision', 'physics' ],
   Image: [ 'base', 'image', 'spatial', 'behavior', 'collision', 'physics' ],
   Web: [ 'base', 'web', 'spatial', 'behavior', 'collision', 'physics' ],
@@ -1394,6 +1467,7 @@ const GROUPS_PER_TYPE = {
                     'particles_acceleration', 'particles_spin', 'particles_constraints', 'spatial', 'behavior', 'physics' ],
   PolyLine: [ 'base', 'spatial', 'behavior', 'collision', 'physics' ],
   PolyVox: [ 'base', 'spatial', 'behavior', 'collision', 'physics' ],
+  Grid: [ 'base', 'grid', 'spatial', 'behavior', 'physics' ],
   Multiple: [ 'base', 'spatial', 'behavior', 'collision', 'physics' ],
 };
 
@@ -1418,10 +1492,19 @@ const ENTITY_SCRIPT_STATUS = {
     unloaded: "Unloaded"
 };
 
+const ENABLE_DISABLE_SELECTOR = "input, textarea, span, .dropdown dl, .color-picker";
+
 const PROPERTY_NAME_DIVISION = {
     GROUP: 0,
     PROPERTY: 1,
     SUBPROPERTY: 2,
+};
+
+const RECT_ELEMENTS = {
+    X_NUMBER: 0,
+    Y_NUMBER: 1,
+    WIDTH_NUMBER: 2,
+    HEIGHT_NUMBER: 3,
 };
 
 const VECTOR_ELEMENTS = {
@@ -1446,6 +1529,7 @@ const JSON_EDITOR_ROW_DIV_INDEX = 2;
 
 let elGroups = {};
 let properties = {};
+let propertyRangeRequests = [];
 let colorPickers = {};
 let particlePropertyUpdates = {};
 let selectedEntityProperties;
@@ -1475,6 +1559,13 @@ function getPropertyInputElement(propertyID) {
             return property.elInput;
         case 'number-draggable':
             return property.elNumber.elInput;
+        case 'rect':
+            return {
+                x: property.elNumberX.elInput,
+                y: property.elNumberY.elInput,
+                width: property.elNumberWidth.elInput,
+                height: property.elNumberHeight.elInput
+            };
         case 'vec3': 
         case 'vec2':
             return { x: property.elNumberX.elInput, y: property.elNumberY.elInput, z: property.elNumberZ.elInput };
@@ -1502,8 +1593,7 @@ function disableChildren(el, selector) {
 }
 
 function enableProperties() {
-    enableChildren(document.getElementById("properties-list"),
-                   "input, textarea, checkbox, .dropdown dl, .color-picker , .draggable-number.text");
+    enableChildren(document.getElementById("properties-list"), ENABLE_DISABLE_SELECTOR);
     enableChildren(document, ".colpick");
     
     let elLocked = getPropertyInputElement("locked");
@@ -1514,8 +1604,7 @@ function enableProperties() {
 }
 
 function disableProperties() {
-    disableChildren(document.getElementById("properties-list"),
-                    "input, textarea, checkbox, .dropdown dl, .color-picker, .draggable-number.text");
+    disableChildren(document.getElementById("properties-list"), ENABLE_DISABLE_SELECTOR);
     disableChildren(document, ".colpick");
     for (let pickKey in colorPickers) {
         colorPickers[pickKey].colpickHide();
@@ -1562,6 +1651,13 @@ function resetProperties() {
                 } else { 
                     property.elNumber.setValue("");
                 }
+                break;
+            }
+            case 'rect': {
+                property.elNumberX.setValue("");
+                property.elNumberY.setValue("");
+                property.elNumberWidth.setValue("");
+                property.elNumberHeight.setValue("");
                 break;
             }
             case 'vec3': 
@@ -1748,7 +1844,7 @@ function createDragStartFunction(property) {
 function createDragEndFunction(property) {
     return function() {
         property.dragging = false;
-        // send an additonal update post-dragging to consider whole property change from dragStart to dragEnd to be 1 action
+        // send an additional update post-dragging to consider whole property change from dragStart to dragEnd to be 1 action
         this.valueChangeFunction();
     };
 }
@@ -1793,6 +1889,18 @@ function createEmitVec3PropertyUpdateFunction(property) {
     };
 }
 
+function createEmitRectPropertyUpdateFunction(property) {
+    return function() {
+        let newValue = {
+            x: property.elNumberX.elInput.value,
+            y: property.elNumberY.elInput.value,
+            width: property.elNumberWidth.elInput.value,
+            height: property.elNumberHeight.elInput.value,
+        };
+        updateProperty(property.name, newValue, property.isParticleProperty);
+    };
+}
+
 function createEmitColorPropertyUpdateFunction(property) {
     return function() {
         emitColorPropertyUpdate(property.name, property.elNumberR.elInput.value, property.elNumberG.elInput.value,
@@ -1820,14 +1928,6 @@ function updateCheckedSubProperty(propertyName, propertyValue, subPropertyElemen
     }
     updateProperty(propertyName, propertyValue, isParticleProperty);
 }
-
-function createImageURLUpdateFunction(property) {
-    return function () {
-        let newTextures = JSON.stringify({ "tex.picture": this.value });
-        updateProperty(property.name, newTextures, property.isParticleProperty);
-    };
-}
-
 
 /**
  * PROPERTY ELEMENT CREATION FUNCTIONS
@@ -1930,6 +2030,18 @@ function createNumberProperty(property, elProperty) {
     return elInput;
 }
 
+function updateNumberMinMax(property) {
+    let elInput = property.elInput;
+    let min = property.data.min;
+    let max = property.data.max;
+    if (min !== undefined) {
+        elInput.setAttribute("min", min);
+    }
+    if (max !== undefined) {
+        elInput.setAttribute("max", max);
+    }
+}
+
 function createNumberDraggableProperty(property, elProperty) { 
     let elementID = property.elementID;
     let propertyData = property.data;
@@ -1957,6 +2069,58 @@ function createNumberDraggableProperty(property, elProperty) {
     }
     
     return elDraggableNumber;
+}
+
+function updateNumberDraggableMinMax(property) {
+    let propertyData = property.data;
+    property.elNumber.updateMinMax(propertyData.min, propertyData.max);
+}
+
+function createRectProperty(property, elProperty) {
+    let propertyData = property.data;
+
+    elProperty.className = "rect";
+
+    let elXYRow = document.createElement('div');
+    elXYRow.className = "rect-row fstuple";
+    elProperty.appendChild(elXYRow);
+
+    let elWidthHeightRow = document.createElement('div');
+    elWidthHeightRow.className = "rect-row fstuple";
+    elProperty.appendChild(elWidthHeightRow);
+
+
+    let elNumberX = createTupleNumberInput(property, propertyData.subLabels[RECT_ELEMENTS.X_NUMBER]);
+    let elNumberY = createTupleNumberInput(property, propertyData.subLabels[RECT_ELEMENTS.Y_NUMBER]);
+    let elNumberWidth = createTupleNumberInput(property, propertyData.subLabels[RECT_ELEMENTS.WIDTH_NUMBER]);
+    let elNumberHeight = createTupleNumberInput(property, propertyData.subLabels[RECT_ELEMENTS.HEIGHT_NUMBER]);
+
+    elXYRow.appendChild(elNumberX.elDiv);
+    elXYRow.appendChild(elNumberY.elDiv);
+    elWidthHeightRow.appendChild(elNumberWidth.elDiv);
+    elWidthHeightRow.appendChild(elNumberHeight.elDiv);
+
+    let valueChangeFunction = createEmitRectPropertyUpdateFunction(property);
+    elNumberX.setValueChangeFunction(valueChangeFunction);
+    elNumberY.setValueChangeFunction(valueChangeFunction);
+    elNumberWidth.setValueChangeFunction(valueChangeFunction);
+    elNumberHeight.setValueChangeFunction(valueChangeFunction);
+
+    let elResult = [];
+    elResult[RECT_ELEMENTS.X_NUMBER] = elNumberX;
+    elResult[RECT_ELEMENTS.Y_NUMBER] = elNumberY;
+    elResult[RECT_ELEMENTS.WIDTH_NUMBER] = elNumberWidth;
+    elResult[RECT_ELEMENTS.HEIGHT_NUMBER] = elNumberHeight;
+    return elResult;
+}
+
+function updateRectMinMax(property) {
+    let min = property.data.min;
+    let max = property.data.max;
+    property.elNumberX.updateMinMax(min, max);
+    property.elNumberY.updateMinMax(min, max);
+    property.elNumberWidth.updateMinMax(min, max);
+    property.elNumberHeight.updateMinMax(min, max);
 }
 
 function createVec3Property(property, elProperty) {
@@ -2008,6 +2172,16 @@ function createVec2Property(property, elProperty) {
     return elResult;
 }
 
+function updateVectorMinMax(property) {
+    let min = property.data.min;
+    let max = property.data.max;
+    property.elNumberX.updateMinMax(min, max);
+    property.elNumberY.updateMinMax(min, max);
+    if (property.elNumberZ) {
+        property.elNumberZ.updateMinMax(min, max);
+    }
+}
+
 function createColorProperty(property, elProperty) {
     let propertyName = property.name;
     let elementID = property.elementID;
@@ -2055,7 +2229,6 @@ function createColorProperty(property, elProperty) {
         submit: false, // We don't want to have a submission button
         onShow: function(colpick) {
             console.log("Showing");
-            $(colorPickerID).attr('active', 'true');
             // The original color preview within the picker needs to be updated on show because
             // prior to the picker being shown we don't have access to the selections' starting color.
             colorPickers[colorPickerID].colpickSetColor({
@@ -2063,13 +2236,18 @@ function createColorProperty(property, elProperty) {
                 "g": elNumberG.elInput.value,
                 "b": elNumberB.elInput.value
             });
+
+            // Set the color picker active after setting the color, otherwise an update will be sent on open.
+            $(colorPickerID).attr('active', 'true');
         },
         onHide: function(colpick) {
             $(colorPickerID).attr('active', 'false');
         },
         onChange: function(hsb, hex, rgb, el) {
             $(el).css('background-color', '#' + hex);
-            emitColorPropertyUpdate(propertyName, rgb.r, rgb.g, rgb.b);
+            if ($(colorPickerID).attr('active') === 'true') {
+                emitColorPropertyUpdate(propertyName, rgb.r, rgb.g, rgb.b);
+            }
         }
     });
     
@@ -2157,7 +2335,7 @@ function createTextureProperty(property, elProperty) {
     elInput.setAttribute("id", elementID);
     elInput.setAttribute("type", "text"); 
     
-    let imageLoad = _.debounce(function (url) {
+    let imageLoad = function(url) {
         if (url.slice(0, 5).toLowerCase() === "atp:/") {
             elImage.src = "";
             elImage.style.display = "none";
@@ -2177,15 +2355,12 @@ function createTextureProperty(property, elProperty) {
             elDiv.classList.remove("no-preview");
             elDiv.classList.add("no-texture");
         }
-    }, IMAGE_DEBOUNCE_TIMEOUT);
-    elInput.imageLoad = imageLoad;
-    elInput.oninput = function (event) {
-        // Add throttle
-        let url = event.target.value;
-        imageLoad(url);
-        updateProperty(property.name, url, property.isParticleProperty)
     };
-    elInput.onchange = elInput.oninput;
+    elInput.imageLoad = imageLoad;
+    elInput.addEventListener('change', createEmitTextPropertyUpdateFunction(property));
+    elInput.addEventListener('change', function(ev) {
+        imageLoad(ev.target.value);
+    });
 
     elProperty.appendChild(elInput);
     elProperty.appendChild(elDiv);
@@ -2279,6 +2454,14 @@ function createProperty(propertyData, propertyElementID, propertyName, propertyI
         }
         case 'number-draggable': {
             property.elNumber = createNumberDraggableProperty(property, elProperty);
+            break;
+        }
+        case 'rect': {
+            let elRect = createRectProperty(property, elProperty);
+            property.elNumberX = elRect[RECT_ELEMENTS.X_NUMBER];
+            property.elNumberY = elRect[RECT_ELEMENTS.Y_NUMBER];
+            property.elNumberWidth = elRect[RECT_ELEMENTS.WIDTH_NUMBER];
+            property.elNumberHeight = elRect[RECT_ELEMENTS.HEIGHT_NUMBER];
             break;
         }
         case 'vec3': {
@@ -2839,6 +3022,13 @@ function toggleDropdown(event) {
     element.setAttribute("dropped", isDropped !== "true" ? "true" : "false");
 }
 
+function closeAllDropdowns() {
+    elDropdowns = document.querySelectorAll("div.dropdown > dl");
+    for (let i = 0; i < elDropdowns.length; ++i) {
+        elDropdowns[i].setAttribute('dropped', 'false');
+    }
+}
+
 function setDropdownValue(event) {
     let dt = event.target.parentNode.parentNode.previousSibling;
     dt.value = event.target.getAttribute("value");
@@ -2994,6 +3184,9 @@ function loaded() {
                         if (property.type !== 'placeholder') {
                             properties[propertyID] = property;
                         }
+                        if (innerPropertyData.type === 'number' || innerPropertyData.type === 'number-draggable') {
+                            propertyRangeRequests.push(propertyID);
+                        }
                     }
                 } else {
                     let property = createProperty(propertyData, propertyElementID, propertyName, propertyID, elProperty);
@@ -3003,6 +3196,10 @@ function loaded() {
                     
                     if (property.type !== 'placeholder') {
                         properties[propertyID] = property;
+                    }           
+                    if (propertyData.type === 'number' || propertyData.type === 'number-draggable' || 
+                        propertyData.type === 'vec2' || propertyData.type === 'vec3' || propertyData.type === 'rect') {
+                        propertyRangeRequests.push(propertyID);
                     }
                     
                     let showPropertyRule = propertyData.showPropertyRule;
@@ -3127,21 +3324,18 @@ function loaded() {
                             }
                         }
 
-                        let doSelectElement = lastEntityID === '"' + selectedEntityProperties.id + '"';
+                        let hasSelectedEntityChanged = lastEntityID !== '"' + selectedEntityProperties.id + '"';
+
+                        if (!data.isPropertiesToolUpdate && !hasSelectedEntityChanged && document.hasFocus()) {
+                            // in case the selection has not changed and we still have focus on the properties page,
+                            // we will ignore the event.
+                            return;
+                        }
+
+                        let doSelectElement = !hasSelectedEntityChanged;
 
                         // the event bridge and json parsing handle our avatar id string differently.
                         lastEntityID = '"' + selectedEntityProperties.id + '"';
-
-                        // HTML workaround since image is not yet a separate entity type
-                        let IMAGE_MODEL_NAME = 'default-image-model.fbx';
-                        if (selectedEntityProperties.type === "Model") {
-                            let urlParts = selectedEntityProperties.modelURL.split('/');
-                            let propsFilename = urlParts[urlParts.length - 1];
-
-                            if (propsFilename === IMAGE_MODEL_NAME) {
-                                selectedEntityProperties.type = "Image";
-                            }
-                        }
 
                         showGroupsForType(selectedEntityProperties.type);
                         
@@ -3169,8 +3363,8 @@ function loaded() {
                                 let shouldHide = selectedEntityProperties.certificateID !== "";
                                 if (shouldHide) {
                                     propertyValue = "** Certified **";
+                                    property.elInput.disabled = true;
                                 }
-                                property.elInput.disabled = shouldHide;
                             }
                             
                             let isPropertyNotNumber = false;
@@ -3179,6 +3373,7 @@ function loaded() {
                                 case 'number-draggable':
                                     isPropertyNotNumber = isNaN(propertyValue) || propertyValue === null;
                                     break;
+                                case 'rect':
                                 case 'vec3':
                                 case 'vec2':
                                     isPropertyNotNumber = isNaN(propertyValue.x) || propertyValue.x === null;
@@ -3221,6 +3416,12 @@ function loaded() {
                                     property.elNumber.setValue(value);
                                     break;
                                 }
+                                case 'rect':
+                                    property.elNumberX.setValue(propertyValue.x);
+                                    property.elNumberY.setValue(propertyValue.y);
+                                    property.elNumberWidth.setValue(propertyValue.width);
+                                    property.elNumberHeight.setValue(propertyValue.height);
+                                    break;
                                 case 'vec3':
                                 case 'vec2': {
                                     let multiplier = propertyData.multiplier !== undefined ? propertyData.multiplier : 1;
@@ -3251,6 +3452,18 @@ function loaded() {
                                     property.elColorPicker.style.backgroundColor = "rgb(" + propertyValue.red + "," + 
                                                                                      propertyValue.green + "," + 
                                                                                      propertyValue.blue + ")";
+                                    if (hasSelectedEntityChanged && $(property.elColorPicker).attr('active') === 'true') {
+                                        // Set the color picker inactive before setting the color,
+                                        // otherwise an update will be sent directly after setting it here.
+                                        $(property.elColorPicker).attr('active', 'false');
+                                        colorPickers['#' + property.elementID].colpickSetColor({
+                                            "r": propertyValue.red,
+                                            "g": propertyValue.green,
+                                            "b": propertyValue.blue
+                                        });
+                                        $(property.elColorPicker).attr('active', 'true');
+                                    }
+
                                     property.elNumberR.setValue(propertyValue.red);
                                     property.elNumberG.setValue(propertyValue.green);
                                     property.elNumberB.setValue(propertyValue.blue);
@@ -3290,10 +3503,7 @@ function loaded() {
 
                         updateVisibleSpaceModeProperties();
 
-                        if (selectedEntityProperties.type === "Image") {
-                            let imageLink = JSON.parse(selectedEntityProperties.textures)["tex.picture"];
-                            getPropertyInputElement("image").value = imageLink;
-                        } else if (selectedEntityProperties.type === "Material") {
+                        if (selectedEntityProperties.type === "Material") {
                             let elParentMaterialNameString = getPropertyInputElement("materialNameToReplace");
                             let elParentMaterialNameNumber = getPropertyInputElement("submeshToReplace");
                             let elParentMaterialNameCheckbox = getPropertyInputElement("selectSubmesh");
@@ -3368,11 +3578,48 @@ function loaded() {
                 } else if (data.type === 'setSpaceMode') {
                     currentSpaceMode = data.spaceMode === "local" ? PROPERTY_SPACE_MODE.LOCAL : PROPERTY_SPACE_MODE.WORLD;
                     updateVisibleSpaceModeProperties();
+                } else if (data.type === 'propertyRangeReply') {
+                    let propertyRanges = data.propertyRanges;
+                    for (let property in propertyRanges) {
+                        let propertyRange = propertyRanges[property];
+                        if (propertyRange !== undefined) {
+                            let propertyData = properties[property].data;
+                            let multiplier = propertyData.multiplier;
+                            if (propertyData.min === undefined && propertyRange.minimum != "") {
+                                propertyData.min = propertyRange.minimum;
+                                if (multiplier !== undefined) {
+                                    propertyData.min /= multiplier;
+                                }
+                            }
+                            if (propertyData.max === undefined && propertyRange.maximum != "") {
+                                propertyData.max = propertyRange.maximum;
+                                if (multiplier !== undefined) {
+                                    propertyData.max /= multiplier;
+                                }
+                            }
+                            switch (propertyData.type) {
+                                case 'number':
+                                    updateNumberMinMax(properties[property]);
+                                    break;
+                                case 'number-draggable':
+                                    updateNumberDraggableMinMax(properties[property]);
+                                    break;
+                                case 'vec3':
+                                case 'vec2':
+                                    updateVectorMinMax(properties[property]);
+                                    break;
+                                case 'rect':
+                                    updateRectMinMax(properties[property]);
+                                    break;
+                            }
+                        }
+                    }
                 }
             });
 
-            // Request tooltips as soon as we can process a reply:
+            // Request tooltips and property ranges as soon as we can process a reply:
             EventBridge.emitWebEvent(JSON.stringify({ type: 'tooltipsRequest' }));
+            EventBridge.emitWebEvent(JSON.stringify({ type: 'propertyRangeRequest', properties: propertyRangeRequests }));
         }
         
         // Server Script Status
@@ -3455,8 +3702,6 @@ function loaded() {
                 showParentMaterialNameBox(false, elParentMaterialNameNumber, elParentMaterialNameString);
             }
         });
-        
-        getPropertyInputElement("image").addEventListener('change', createImageURLUpdateFunction(properties['textures']));
         
         // Collapsible sections
         let elCollapsible = document.getElementsByClassName("collapse-icon");
@@ -3553,6 +3798,8 @@ function loaded() {
             property.elInput = dt;
             dt.addEventListener('change', createEmitTextPropertyUpdateFunction(property));
         }
+
+        document.addEventListener('click', function(ev) { closeAllDropdowns() }, true);
         
         elDropdowns = document.getElementsByTagName("select");
         while (elDropdowns.length > 0) {
@@ -3571,6 +3818,11 @@ function loaded() {
             if (FILTERED_NODE_NAMES.includes(keyUpEvent.target.nodeName)) {
                 return;
             }
+
+            if (elUserDataEditor.contains(keyUpEvent.target) || elMaterialDataEditor.contains(keyUpEvent.target)) {
+                return;
+            }
+
             let {code, key, keyCode, altKey, ctrlKey, metaKey, shiftKey} = keyUpEvent;
 
             let controlKey = window.navigator.platform.startsWith("Mac") ? metaKey : ctrlKey;
